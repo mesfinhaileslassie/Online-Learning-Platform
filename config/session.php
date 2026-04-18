@@ -1,10 +1,10 @@
 <?php
-// Start session if not started
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
-// Session timeout check
+define('SESSION_TIMEOUT', 7200);
+
 if (isset($_SESSION['last_activity']) && (time() - $_SESSION['last_activity'] > SESSION_TIMEOUT)) {
     session_unset();
     session_destroy();
@@ -12,7 +12,6 @@ if (isset($_SESSION['last_activity']) && (time() - $_SESSION['last_activity'] > 
 }
 $_SESSION['last_activity'] = time();
 
-// Regenerate session ID periodically
 if (!isset($_SESSION['last_regeneration'])) {
     $_SESSION['last_regeneration'] = time();
 } elseif (time() - $_SESSION['last_regeneration'] > 1800) {

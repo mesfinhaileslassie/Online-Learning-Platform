@@ -26,22 +26,46 @@
         document.getElementById('loginForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             
-            const formData = new FormData();
-            formData.append('email', document.getElementById('email').value);
-            formData.append('password', document.getElementById('password').value);
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
             
-            const response = await fetch('/ethioskillfactoryV2/api/auth/login.php', {
-                method: 'POST',
-                body: formData
-            });
+            const formData = new URLSearchParams();
+            formData.append('email', email);
+            formData.append('password', password);
             
-            const result = await response.json();
-            
-            if (result.success) {
-                localStorage.setItem('user', JSON.stringify(result.user));
-                window.location.href = result.redirect;
-            } else {
-                document.getElementById('message').innerHTML = '<div class="error">' + result.message + '</div>';
+            try {
+                const response = await fetch('/ethioskillfactoryV2/api/auth/login.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: formData
+                });
+                
+                const text = await response.text();
+                console.log('Raw response:', text);
+                
+                let result;
+                try {
+                    result = JSON.parse(text);
+                } catch(e) {
+                    document.getElementById('message').innerHTML = '<div class="error">❌ Server error. Please check the console.</div>';
+                    console.error('JSON parse error:', text);
+                    return;
+                }
+                
+                if (result.success === true) {
+                    localStorage.setItem('user', JSON.stringify(result.user));
+                    document.getElementById('message').innerHTML = '<div class="success">✅ Login successful! Redirecting...</div>';
+                    setTimeout(() => {
+                        window.location.href = result.redirect;
+                    }, 1000);
+                } else {
+                    document.getElementById('message').innerHTML = '<div class="error">❌ ' + result.message + '</div>';
+                }
+            } catch (error) {
+                console.error('Fetch error:', error);
+                document.getElementById('message').innerHTML = '<div class="error">❌ Error: ' + error.message + '</div>';
             }
         });
     </script>

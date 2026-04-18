@@ -60,3 +60,13 @@ body {
     font-size: 12px;
     color: #666;
 }
+
+
+.success {
+    background: #efe;
+    color: #3c3;
+    padding: 10px;
+    border-radius: 5px;
+    margin-bottom: 15px;
+    border: 1px solid #cfc;
+}

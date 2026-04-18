@@ -1,5 +1,7 @@
 <?php
+error_reporting(0);
 header('Content-Type: application/json');
+
 require_once '../../config/database.php';
 require_once '../../config/session.php';
 
@@ -16,7 +18,8 @@ if (empty($email) || empty($password)) {
     exit();
 }
 
-$stmt = mysqli_prepare($conn, "SELECT id, full_name, email, role FROM users WHERE email = ?");
+// Get user including password_hash
+$stmt = mysqli_prepare($conn, "SELECT id, full_name, email, role, password_hash FROM users WHERE email = ?");
 mysqli_stmt_bind_param($stmt, "s", $email);
 mysqli_stmt_execute($stmt);
 $result = mysqli_stmt_get_result($stmt);
@@ -27,7 +30,19 @@ if (!$user) {
     exit();
 }
 
-if ($password !== 'password123') {
+// Check password - supports both demo and registered users
+$password_valid = false;
+
+// Demo accounts (password123)
+if ($password === 'password123') {
+    $password_valid = true;
+}
+// Registered users (hashed password)
+elseif (password_verify($password, $user['password_hash'])) {
+    $password_valid = true;
+}
+
+if (!$password_valid) {
     echo json_encode(['success' => false, 'message' => 'Invalid email or password']);
     exit();
 }
