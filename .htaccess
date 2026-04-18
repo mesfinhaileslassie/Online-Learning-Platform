@@ -1,0 +1,15 @@
+RewriteEngine On
+
+# If request is for API, route to api folder
+RewriteRule ^api/(.*)$ api/$1 [L,NC]
+
+# If request is for public folder or existing file, serve directly
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^(.*)$ public/$1 [L]
+
+# Prevent direct access to config folder
+RewriteRule ^config/ - [F,L]
+
+# Prevent direct access to uploads folder (serve via PHP only)
+RewriteRule ^uploads/ - [F,L]

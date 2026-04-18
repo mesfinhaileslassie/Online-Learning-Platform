@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Dashboard - EthioSkillFactory</title>
+    <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+    <div class="dashboard-container">
+        <h1>Welcome to Dashboard</h1>
+        <div id="userInfo"></div>
+        <button onclick="logout()">Logout</button>
+    </div>
+
+    <script>
+        const user = JSON.parse(localStorage.getItem('user') || '{}');
+        document.getElementById('userInfo').innerHTML = '<p>Welcome, ' + user.name + '! Role: ' + user.role + '</p>';
+        
+        async function logout() {
+            await fetch('/ethioskillfactoryV2/api/auth/logout.php', { method: 'POST' });
+            localStorage.removeItem('user');
+            window.location.href = '/ethioskillfactoryV2/public/login.html';
+        }
+    </script>
+</body>
+</html>
