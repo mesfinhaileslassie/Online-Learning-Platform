@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Learning - EthioSkillFactory</title>
+    <style>
+        body { font-family: Arial; margin: 0; padding: 20px; background: #f0f0f0; }
+        .container { display: flex; gap: 20px; max-width: 1200px; margin: auto; }
+        .video-area { flex: 2; background: #000; border-radius: 10px; overflow: hidden; }
+        video { width: 100%; background: black; }
+        .sidebar { flex: 1; background: white; border-radius: 10px; padding: 15px; height: fit-content; }
+        .module { margin-bottom: 15px; }
+        .module-title { font-weight: bold; background: #667eea; color: white; padding: 10px; cursor: pointer; }
+        .lessons { list-style: none; padding-left: 20px; }
+        .lesson { padding: 8px; cursor: pointer; border-bottom: 1px solid #eee; }
+        .lesson:hover { background: #f5f5f5; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="video-area">
+            <video id="videoPlayer" controls width="100%">
+                <source id="videoSource" src="" type="video/mp4">
+                Your browser does not support the video tag.
+            </video>
+            <div id="lessonInfo" style="padding: 10px; background: white;"></div>
+        </div>
+        <div class="sidebar">
+            <h3>Course Content</h3>
+            <div id="curriculum"></div>
+        </div>
+    </div>
+
+    <script>
+        const courseId = new URLSearchParams(window.location.search).get('id');
+
+        async function loadCurriculum() {
+            const response = await fetch(`/ethioskillfactoryV2/api/learning/curriculum.php?course_id=${courseId}`);
+            const data = await response.json();
+            if (data.success) {
+                let html = '';
+                for (const module of data.modules) {
+                    html += `<div class="module">
+                        <div class="module-title">${module.title}</div>
+                        <ul class="lessons">`;
+                    for (const lesson of module.lessons) {
+                        html += `<li class="lesson" onclick="playLesson('${lesson.content_url}', '${lesson.title}')">${lesson.title} (${lesson.duration_minutes} min)</li>`;
+                    }
+                    html += `</ul></div>`;
+                }
+                document.getElementById('curriculum').innerHTML = html;
+            }
+        }
+
+        function playLesson(url, title) {
+            const video = document.getElementById('videoPlayer');
+            const source = document.getElementById('videoSource');
+            source.src = url;
+            video.load();
+            video.play();
+            document.getElementById('lessonInfo').innerHTML = `<strong>${title}</strong>`;
+        }
+
+        loadCurriculum();
+    </script>
+</body>
+</html>

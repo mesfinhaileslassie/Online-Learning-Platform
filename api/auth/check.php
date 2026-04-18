@@ -1,19 +1,10 @@
 <?php
-require_once '../../config/database.php';
-require_once '../../config/constants.php';
-require_once '../../config/session.php';
-require_once '../../config/functions.php';
+session_start();
+header('Content-Type: application/json');
 
-if (isLoggedIn()) {
-    sendJsonResponse(true, 'Logged in', [
-        'user' => [
-            'id' => $_SESSION['user_id'],
-            'name' => $_SESSION['user_name'],
-            'email' => $_SESSION['user_email'],
-            'role' => $_SESSION['user_role']
-        ]
-    ]);
+if (isset($_SESSION['user_id'])) {
+    echo json_encode(['success' => true, 'user' => ['id' => $_SESSION['user_id'], 'name' => $_SESSION['user_name']]]);
 } else {
-    sendJsonResponse(false, 'Not logged in');
+    echo json_encode(['success' => false]);
 }
 ?>

@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>My Dashboard - EthioSkillFactory</title>
+    <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>My Dashboard</h1>
+        <div id="userInfo"></div>
+        <h2>My Courses</h2>
+        <div id="myCourses"></div>
+        <button onclick="logout()">Logout</button>
+    </div>
+
+    <script>
+        async function loadDashboard() {
+            // Get user from localStorage
+            const user = JSON.parse(localStorage.getItem('user') || '{}');
+            document.getElementById('userInfo').innerHTML = `<p>Welcome, ${user.name || 'Student'}!</p>`;
+
+            // Load enrolled courses
+            try {
+                const response = await fetch('/ethioskillfactoryV2/api/user/my-courses.php');
+                const data = await response.json();
+                console.log('Courses data:', data); // Debug log
+                
+                const container = document.getElementById('myCourses');
+                
+                if (data.success && data.courses && data.courses.length > 0) {
+                    container.innerHTML = data.courses.map(course => `
+                        <div style="border:1px solid #ddd; margin:10px 0; padding:15px; border-radius:8px;">
+                            <h3>${course.title}</h3>
+                            <p>${course.description || 'No description'}</p>
+                            <p>Enrolled: ${course.enrolled_at}</p>
+                            <p>Progress: ${course.progress_percent}%</p>
+                            <a href="/ethioskillfactoryV2/public/learning/course.php?id=${course.id}" class="btn">Continue Learning</a>
+                        </div>
+                    `).join('');
+                } else {
+                    container.innerHTML = '<p>You are not enrolled in any courses yet. <a href="/ethioskillfactoryV2/public/courses.html">Browse Courses</a></p>';
+                }
+            } catch (error) {
+                console.error('Error loading courses:', error);
+                document.getElementById('myCourses').innerHTML = '<p>Error loading your courses. Please try again.</p>';
+            }
+        }
+
+        async function logout() {
+            await fetch('/ethioskillfactoryV2/api/auth/logout.php', { method: 'POST' });
+            localStorage.removeItem('user');
+            window.location.href = '/ethioskillfactoryV2/public/login.html';
+        }
+
+        loadDashboard();
+    </script>
+</body>
+</html>

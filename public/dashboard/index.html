@@ -1,25 +1,252 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Dashboard - EthioSkillFactory</title>
-    <link rel="stylesheet" href="../css/style.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Dashboard - EthioSkillFactory</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f5f7fa;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            color: #2d3748;
+            margin-bottom: 10px;
+        }
+
+        .user-info {
+            background: white;
+            padding: 15px 20px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logout-btn {
+            background: #e53e3e;
+            color: white;
+            border: none;
+            padding: 8px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .logout-btn:hover {
+            background: #c53030;
+        }
+
+        h2 {
+            color: #2d3748;
+            margin-bottom: 20px;
+        }
+
+        .courses-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 20px;
+        }
+
+        .course-card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .course-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+        }
+
+        .course-card h3 {
+            font-size: 1.3rem;
+            color: #2d3748;
+            margin-bottom: 10px;
+        }
+
+        .course-card p {
+            color: #4a5568;
+            margin-bottom: 15px;
+            line-height: 1.4;
+        }
+
+        .course-meta {
+            font-size: 0.85rem;
+            color: #718096;
+            margin-bottom: 10px;
+        }
+
+        .progress-bar {
+            background: #e2e8f0;
+            border-radius: 20px;
+            height: 8px;
+            margin: 15px 0;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            background: #48bb78;
+            height: 100%;
+            width: 0%;
+            border-radius: 20px;
+            transition: width 0.3s;
+        }
+
+        .btn {
+            display: inline-block;
+            background: #667eea;
+            color: white;
+            text-decoration: none;
+            padding: 10px 18px;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            transition: background 0.2s;
+            border: none;
+            cursor: pointer;
+        }
+
+        .btn:hover {
+            background: #5a67d8;
+        }
+
+        .empty-state {
+            background: white;
+            padding: 40px;
+            text-align: center;
+            border-radius: 12px;
+            color: #718096;
+        }
+
+        .empty-state a {
+            color: #667eea;
+            text-decoration: none;
+        }
+    </style>
 </head>
 <body>
-    <div class="dashboard-container">
-        <h1>Welcome to Dashboard</h1>
-        <div id="userInfo"></div>
-        <button onclick="logout()">Logout</button>
+    <div class="container">
+        <h1>My Dashboard</h1>
+        <div class="user-info" id="userInfo">
+            <span id="welcomeMsg">Loading...</span>
+            <button class="logout-btn" onclick="logout()">Logout</button>
+        </div>
+
+        <h2>My Courses</h2>
+        <div id="myCourses" class="courses-grid">
+            <div class="empty-state">Loading your courses...</div>
+        </div>
     </div>
 
     <script>
-        const user = JSON.parse(localStorage.getItem('user') || '{}');
-        document.getElementById('userInfo').innerHTML = '<p>Welcome, ' + user.name + '! Role: ' + user.role + '</p>';
-        
+        // Get user from localStorage (set after login)
+        const storedUser = localStorage.getItem('user');
+        let currentUser = null;
+        if (storedUser) {
+            try {
+                currentUser = JSON.parse(storedUser);
+            } catch(e) {}
+        }
+
+        // Display welcome message
+        const welcomeEl = document.getElementById('welcomeMsg');
+        if (currentUser && currentUser.name) {
+            welcomeEl.textContent = `Welcome, ${currentUser.name}! (${currentUser.role || 'student'})`;
+        } else {
+            welcomeEl.textContent = 'Welcome!';
+        }
+
+        // Function to load enrolled courses
+        async function loadEnrolledCourses() {
+            const container = document.getElementById('myCourses');
+            container.innerHTML = '<div class="empty-state">Loading your courses...</div>';
+
+            try {
+                const response = await fetch('/ethioskillfactoryV2/api/user/my-courses.php');
+                const data = await response.json();
+
+                console.log('Courses API response:', data);
+
+                if (data.success && data.courses && data.courses.length > 0) {
+                    let html = '';
+                    for (const course of data.courses) {
+                        const progress = course.progress_percent || 0;
+                        html += `
+                            <div class="course-card">
+                                <h3>${escapeHtml(course.title)}</h3>
+                                <p>${escapeHtml(course.description ? course.description.substring(0, 120) : 'No description')}${course.description && course.description.length > 120 ? '...' : ''}</p>
+                                <div class="course-meta">
+                                    Enrolled: ${formatDate(course.enrolled_at)}
+                                </div>
+                                <div class="progress-bar">
+                                    <div class="progress-fill" style="width: ${progress}%;"></div>
+                                </div>
+                                <div style="display: flex; justify-content: space-between; align-items: center;">
+                                    <span style="font-size: 0.85rem;">${progress}% complete</span>
+                                    <a href="/ethioskillfactoryV2/public/learning/course.html?id=${course.id}" class="btn">Continue Learning →</a>
+                                </div>
+                            </div>
+                        `;
+                    }
+                    container.innerHTML = html;
+                } else {
+                    container.innerHTML = `
+                        <div class="empty-state">
+                            <p>You are not enrolled in any courses yet.</p>
+                            <p><a href="/ethioskillfactoryV2/public/courses.html">Browse Courses</a> and start learning today!</p>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                console.error('Error loading courses:', error);
+                container.innerHTML = '<div class="empty-state">Error loading your courses. Please refresh the page.</div>';
+            }
+        }
+
+        // Helper: escape HTML to prevent XSS
+        function escapeHtml(text) {
+            if (!text) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Helper: format date
+        function formatDate(dateString) {
+            if (!dateString) return 'Unknown';
+            const date = new Date(dateString);
+            return date.toLocaleDateString();
+        }
+
+        // Logout function
         async function logout() {
-            await fetch('/ethioskillfactoryV2/api/auth/logout.php', { method: 'POST' });
+            try {
+                await fetch('/ethioskillfactoryV2/api/auth/logout.php', { method: 'POST' });
+            } catch(e) {}
             localStorage.removeItem('user');
             window.location.href = '/ethioskillfactoryV2/public/login.html';
         }
+
+        // Load the courses when page loads
+        loadEnrolledCourses();
     </script>
 </body>
 </html>

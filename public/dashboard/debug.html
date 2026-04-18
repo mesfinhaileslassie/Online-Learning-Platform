@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Debug Dashboard</title>
+</head>
+<body>
+    <h2>Debug Dashboard</h2>
+    <pre id="output"></pre>
+    <script>
+        async function debug() {
+            const output = document.getElementById('output');
+            output.innerText = "Loading...\n";
+            
+            // Check session
+            const sessionRes = await fetch('/ethioskillfactoryV2/api/auth/check.php');
+            const sessionData = await sessionRes.json();
+            output.innerText += "Session check: " + JSON.stringify(sessionData, null, 2) + "\n\n";
+            
+            // Get user from localStorage
+            const user = localStorage.getItem('user');
+            output.innerText += "LocalStorage user: " + user + "\n\n";
+            
+            // Get enrolled courses
+            const coursesRes = await fetch('/ethioskillfactoryV2/api/user/my-courses.php');
+            const coursesData = await coursesRes.json();
+            output.innerText += "Courses API response: " + JSON.stringify(coursesData, null, 2);
+        }
+        debug();
+    </script>
+</body>
+</html>

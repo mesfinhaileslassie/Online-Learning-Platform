@@ -13,64 +13,99 @@
     </div>
 
     <script>
-        // Get course ID from URL
-        const urlParams = new URLSearchParams(window.location.search);
-        const courseId = urlParams.get('id');
+    const urlParams = new URLSearchParams(window.location.search);
+    const courseId = urlParams.get('id');
 
-        async function loadCourseDetails() {
-            if (!courseId) {
-                document.getElementById('course-details').innerHTML = '<p>No course selected.</p>';
-                return;
+    // Check if user is logged in (by calling session check)
+    async function checkLogin() {
+        try {
+            const response = await fetch('/ethioskillfactoryV2/api/auth/check.php');
+            const data = await response.json();
+            return data.success;
+        } catch {
+            return false;
+        }
+    }
+
+    async function enroll() {
+        const formData = new URLSearchParams();
+        formData.append('course_id', courseId);
+
+        const response = await fetch('/ethioskillfactoryV2/api/courses/enroll.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: formData
+        });
+        const result = await response.json();
+        if (result.success) {
+            alert(result.message);
+            window.location.href = result.redirect;
+        } else {
+            if (result.redirect) {
+                window.location.href = result.redirect;
+            } else {
+                alert(result.message);
             }
+        }
+    }
 
-            try {
-                const response = await fetch(`/ethioskillfactoryV2/api/courses/details.php?id=${courseId}`);
-                const data = await response.json();
+    async function loadCourseDetails() {
+        if (!courseId) {
+            document.getElementById('course-details').innerHTML = '<p>No course selected.</p>';
+            return;
+        }
 
-                if (data.success) {
-                    const course = data.course;
-                    document.getElementById('course-details').innerHTML = `
-                        <div class="course-detail-card">
-                            <h1>${escapeHtml(course.title)}</h1>
-                            <p class="subtitle">${escapeHtml(course.subtitle || '')}</p>
-                            <div class="course-info">
-                                <span>👨‍🏫 ${escapeHtml(course.instructor_name)}</span>
-                                <span>📁 ${escapeHtml(course.category_name)}</span>
-                                <span>📊 ${course.level}</span>
-                                <span>🌐 ${course.language}</span>
-                            </div>
-                            <div class="price-large">${course.price_formatted}</div>
-                            <div class="description">
-                                <h3>Description</h3>
-                                <p>${escapeHtml(course.description || 'No description available.')}</p>
-                            </div>
-                            <button id="enrollBtn" class="btn btn-primary btn-large">Enroll Now</button>
+        try {
+            const response = await fetch(`/ethioskillfactoryV2/api/courses/details.php?id=${courseId}`);
+            const data = await response.json();
+
+            if (data.success) {
+                const course = data.course;
+                const isLoggedIn = await checkLogin();
+                const enrollButtonHtml = isLoggedIn 
+                    ? '<button id="enrollBtn" class="btn btn-primary btn-large">Enroll Now</button>'
+                    : '<a href="/ethioskillfactoryV2/public/login.html" class="btn btn-primary btn-large">Login to Enroll</a>';
+
+                document.getElementById('course-details').innerHTML = `
+                    <div class="course-detail-card">
+                        <h1>${escapeHtml(course.title)}</h1>
+                        <p class="subtitle">${escapeHtml(course.subtitle || '')}</p>
+                        <div class="course-info">
+                            <span>👨‍🏫 ${escapeHtml(course.instructor_name)}</span>
+                            <span>📁 ${escapeHtml(course.category_name)}</span>
+                            <span>📊 ${course.level}</span>
+                            <span>🌐 ${course.language}</span>
                         </div>
-                    `;
+                        <div class="price-large">${course.price_formatted}</div>
+                        <div class="description">
+                            <h3>Description</h3>
+                            <p>${escapeHtml(course.description || 'No description available.')}</p>
+                        </div>
+                        ${enrollButtonHtml}
+                    </div>
+                `;
 
-                    // Add enroll button event
-                    document.getElementById('enrollBtn').addEventListener('click', () => {
-                        // Check if user is logged in (you can expand later)
-                        window.location.href = `/ethioskillfactoryV2/public/login.html?redirect=course-details.html?id=${courseId}`;
-                    });
-                } else {
-                    document.getElementById('course-details').innerHTML = '<p>Course not found.</p>';
+                if (isLoggedIn) {
+                    document.getElementById('enrollBtn')?.addEventListener('click', enroll);
                 }
-            } catch (error) {
-                console.error('Error:', error);
-                document.getElementById('course-details').innerHTML = '<p>Error loading course details.</p>';
+            } else {
+                document.getElementById('course-details').innerHTML = '<p>Course not found.</p>';
             }
+        } catch (error) {
+            console.error('Error:', error);
+            document.getElementById('course-details').innerHTML = '<p>Error loading course details.</p>';
         }
+    }
 
-        function escapeHtml(text) {
-            if (!text) return '';
-            const div = document.createElement('div');
-            div.textContent = text;
-            return div.innerHTML;
-        }
+    function escapeHtml(text) {
+        if (!text) return '';
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
 
-        loadCourseDetails();
-    </script>
+    loadCourseDetails();
+</script>
 
     <style>
         .course-detail-card {
