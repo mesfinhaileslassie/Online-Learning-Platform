@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Quiz - EthioSkillFactory</title>
+    <style>
+        body { font-family: Arial; background: #f5f7fa; padding: 20px; }
+        .quiz-container { max-width: 800px; margin: auto; background: white; border-radius: 10px; padding: 20px; }
+        .question { margin-bottom: 20px; border-bottom: 1px solid #ddd; padding-bottom: 10px; }
+        .answers label { display: block; margin: 5px 0; }
+        button { background: #667eea; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; }
+        #result { margin-top: 20px; padding: 10px; border-radius: 5px; }
+        .correct { background: #d4edda; color: #155724; }
+        .wrong { background: #f8d7da; color: #721c24; }
+        .error { background: #fff3cd; color: #856404; }
+    </style>
+</head>
+<body>
+<div class="quiz-container">
+    <h2 id="quizTitle">Loading quiz...</h2>
+    <div id="questions"></div>
+    <button id="submitBtn" style="display:none;">Submit Quiz</button>
+    <div id="result"></div>
+</div>
+
+<script>
+    const lessonId = new URLSearchParams(window.location.search).get('lesson_id');
+    let quizData = null;
+
+    async function loadQuiz() {
+        try {
+            const url = `/ethioskillfactoryV2/api/learning/get-quiz.php?lesson_id=${lessonId}`;
+            console.log('Fetching quiz from:', url);
+            const res = await fetch(url);
+            const data = await res.json();
+            console.log('Quiz data:', data);
+            if (!data.success) {
+                document.getElementById('quizTitle').innerText = 'Error: ' + data.message;
+                return;
+            }
+            quizData = data.quiz;
+            document.getElementById('quizTitle').innerText = quizData.title;
+            let html = '';
+            quizData.questions.forEach((q, idx) => {
+                html += `<div class="question">
+                            <strong>${idx+1}. ${q.question_text}</strong><br>
+                            <div class="answers">`;
+                q.answers.forEach(a => {
+                    html += `<label><input type="${q.question_type === 'multiple_multi' ? 'checkbox' : 'radio'}" name="q${q.id}" value="${a.id}"> ${a.text}</label>`;
+                });
+                html += `</div></div>`;
+            });
+            document.getElementById('questions').innerHTML = html;
+            document.getElementById('submitBtn').style.display = 'block';
+        } catch (err) {
+            console.error('Load quiz error:', err);
+            document.getElementById('quizTitle').innerText = 'Error loading quiz';
+        }
+    }
+
+    document.getElementById('submitBtn').addEventListener('click', async () => {
+        console.log('Submit button clicked');
+        if (!quizData) {
+            alert('Quiz not loaded');
+            return;
+        }
+        const answers = [];
+        quizData.questions.forEach(q => {
+            const selected = Array.from(document.querySelectorAll(`input[name="q${q.id}"]:checked`)).map(cb => cb.value);
+            answers.push({ question_id: q.id, answer_ids: selected });
+        });
+        console.log('Submitting answers:', answers);
+        try {
+            const res = await fetch('/ethioskillfactoryV2/api/learning/submit-quiz.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ quiz_id: quizData.id, answers, lesson_id: lessonId })
+            });
+            const result = await res.json();
+            console.log('Submit result:', result);
+            if (result.success) {
+                document.getElementById('result').innerHTML = `<div class="correct">Score: ${result.score}% - ${result.passed ? 'Passed!' : 'Failed. Try again?'}</div>`;
+            } else {
+                document.getElementById('result').innerHTML = `<div class="wrong">${result.message}</div>`;
+            }
+        } catch (err) {
+            console.error('Submit error:', err);
+            document.getElementById('result').innerHTML = `<div class="error">Error submitting quiz: ${err.message}</div>`;
+        }
+    });
+
+    loadQuiz();
+</script>
+</body>
+</html>

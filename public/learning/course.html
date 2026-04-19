@@ -1,66 +1,310 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Learning - EthioSkillFactory</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Course Player - EthioSkillFactory</title>
     <style>
-        body { font-family: Arial; margin: 0; padding: 20px; background: #f0f0f0; }
-        .container { display: flex; gap: 20px; max-width: 1200px; margin: auto; }
-        .video-area { flex: 2; background: #000; border-radius: 10px; overflow: hidden; }
-        video { width: 100%; background: black; }
-        .sidebar { flex: 1; background: white; border-radius: 10px; padding: 15px; height: fit-content; }
-        .module { margin-bottom: 15px; }
-        .module-title { font-weight: bold; background: #667eea; color: white; padding: 10px; cursor: pointer; }
-        .lessons { list-style: none; padding-left: 20px; }
-        .lesson { padding: 8px; cursor: pointer; border-bottom: 1px solid #eee; }
-        .lesson:hover { background: #f5f5f5; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #0f0f1a; color: #333; }
+        .learning-header { background: #1e1e2f; color: white; padding: 12px 24px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #2d2d3f; }
+        .learning-header h2 { font-size: 1.2rem; font-weight: 500; }
+        .back-btn { color: white; text-decoration: none; background: #2d2d3f; padding: 6px 14px; border-radius: 6px; font-size: 0.85rem; transition: background 0.2s; }
+        .back-btn:hover { background: #3d3d5a; }
+        .learning-main { display: flex; flex-direction: row; height: calc(100vh - 56px); }
+        .content-area { flex: 2; background: white; display: flex; flex-direction: column; overflow-y: auto; }
+        .video-wrapper { background: black; position: relative; padding-bottom: 56.25%; height: 0; }
+        video { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: black; }
+        .text-lesson { padding: 30px; background: white; min-height: 300px; }
+        .text-lesson h3 { font-size: 1.5rem; margin-bottom: 15px; }
+        .text-lesson .content { line-height: 1.6; font-size: 1rem; white-space: pre-wrap; }
+        .lesson-footer { padding: 20px; background: #f8f9fa; border-top: 1px solid #e0e0e0; display: flex; justify-content: space-between; }
+        .nav-buttons button, .mark-complete-btn { background: #4f46e5; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-size: 0.9rem; margin-left: 10px; }
+        .mark-complete-btn { background: #10b981; }
+        .mark-complete-btn.completed { background: #6c757d; cursor: not-allowed; }
+        .sidebar { width: 360px; background: #fefefe; border-left: 1px solid #ddd; display: flex; flex-direction: column; overflow-y: auto; }
+        .sidebar-header { padding: 15px 20px; background: #f5f5fa; border-bottom: 1px solid #ddd; font-weight: 600; position: sticky; top: 0; }
+        .curriculum { flex: 1; overflow-y: auto; padding: 10px 0; }
+        .module { margin-bottom: 8px; border-bottom: 1px solid #eaeef2; }
+        .module-title { padding: 12px 20px; background: #fafafc; cursor: pointer; font-weight: 600; display: flex; justify-content: space-between; }
+        .module-title:hover { background: #f0f0f8; }
+        .lessons { list-style: none; display: none; background: white; }
+        .module.open .lessons { display: block; }
+        .lesson-item { padding: 10px 20px 10px 40px; cursor: pointer; border-left: 3px solid transparent; display: flex; justify-content: space-between; align-items: center; font-size: 0.9rem; }
+        .lesson-item:hover { background: #f8f9ff; }
+        .lesson-item.active { background: #eef2ff; border-left-color: #4f46e5; }
+        .lesson-item.completed { color: #10b981; text-decoration: line-through; }
+        .lesson-title { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .lesson-duration { font-size: 0.7rem; color: #6c757d; margin-left: 12px; }
+        .complete-badge { color: #10b981; margin-left: 8px; font-size: 0.8rem; }
+        .loading { text-align: center; padding: 40px; color: #6c757d; }
+        .error-msg { color: #dc2626; background: #fee2e2; padding: 15px; margin: 15px; border-radius: 8px; text-align: center; }
+        @media (max-width: 768px) { .learning-main { flex-direction: column; } .sidebar { width: 100%; height: 40vh; } .content-area { height: 60vh; } }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="video-area">
-            <video id="videoPlayer" controls width="100%">
+<div class="learning-header">
+    <h2>📘 EthioSkillFactory – Course Player</h2>
+    <a href="/ethioskillfactoryV2/public/dashboard/index.html" class="back-btn">← Dashboard</a>
+</div>
+
+<div class="learning-main">
+    <div class="content-area" id="contentArea">
+        <div id="videoContainer" class="video-wrapper" style="display: none;">
+            <video id="videoPlayer" controls preload="metadata">
                 <source id="videoSource" src="" type="video/mp4">
-                Your browser does not support the video tag.
             </video>
-            <div id="lessonInfo" style="padding: 10px; background: white;"></div>
         </div>
-        <div class="sidebar">
-            <h3>Course Content</h3>
-            <div id="curriculum"></div>
+        <div id="textContainer" class="text-lesson" style="display: none;"></div>
+        <div class="lesson-footer">
+            <div class="nav-buttons">
+                <button id="prevBtn" style="display: none;">← Previous</button>
+                <button id="nextBtn" style="display: none;">Next →</button>
+            </div>
+            <button id="markCompleteBtn" class="mark-complete-btn" style="display: none;">Mark Complete</button>
         </div>
     </div>
 
-    <script>
-        const courseId = new URLSearchParams(window.location.search).get('id');
+    <div class="sidebar">
+        <div class="sidebar-header">📚 Course Curriculum</div>
+        <div class="curriculum" id="curriculum"><div class="loading">Loading...</div></div>
+    </div>
+</div>
 
-        async function loadCurriculum() {
-            const response = await fetch(`/ethioskillfactoryV2/api/learning/curriculum.php?course_id=${courseId}`);
-            const data = await response.json();
-            if (data.success) {
-                let html = '';
-                for (const module of data.modules) {
-                    html += `<div class="module">
-                        <div class="module-title">${module.title}</div>
-                        <ul class="lessons">`;
-                    for (const lesson of module.lessons) {
-                        html += `<li class="lesson" onclick="playLesson('${lesson.content_url}', '${lesson.title}')">${lesson.title} (${lesson.duration_minutes} min)</li>`;
-                    }
-                    html += `</ul></div>`;
+<script>
+    const courseId = new URLSearchParams(window.location.search).get('id');
+    let modulesData = [];
+    let currentLesson = null;
+    let allLessons = []; // flat list of {id, title, type, content, moduleId, order}
+    let currentIndex = -1;
+
+    // Helper: escape HTML
+    function escapeHtml(text) {
+        if (!text) return '';
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    // Load curriculum from API
+    async function loadCurriculum() {
+        const container = document.getElementById('curriculum');
+        container.innerHTML = '<div class="loading">Loading curriculum...</div>';
+        try {
+            const res = await fetch(`/ethioskillfactoryV2/api/learning/curriculum.php?course_id=${courseId}`);
+            const data = await res.json();
+            if (data.success && data.modules) {
+                modulesData = data.modules;
+                buildFlatLessons();
+                renderSidebar();
+                // Load first lesson
+                if (allLessons.length) {
+                    loadLessonByIndex(0);
+                } else {
+                    document.getElementById('contentArea').innerHTML = '<div class="error-msg">No lessons in this course.</div>';
                 }
-                document.getElementById('curriculum').innerHTML = html;
+            } else {
+                container.innerHTML = `<div class="error-msg">${data.message || 'Cannot load course'}</div>`;
+            }
+        } catch (err) {
+            container.innerHTML = '<div class="error-msg">Network error</div>';
+        }
+    }
+
+    // Build flat list of lessons
+    function buildFlatLessons() {
+        allLessons = [];
+        for (let mod of modulesData) {
+            for (let les of mod.lessons) {
+                allLessons.push({
+                    id: les.id,
+                    title: les.title,
+                    type: les.lesson_type,
+                    content: les.content_url || les.content_text || '',
+                    moduleId: mod.id,
+                    order: les.order_index,
+                    is_completed: les.is_completed || false
+                });
             }
         }
+        // Sort by module order then lesson order (but API already returns ordered)
+    }
 
-        function playLesson(url, title) {
+    // Render sidebar with completion status
+    function renderSidebar() {
+        let html = '';
+        for (let mi = 0; mi < modulesData.length; mi++) {
+            const mod = modulesData[mi];
+            const isOpen = (mi === 0) ? 'open' : '';
+            html += `<div class="module ${isOpen}" data-module-index="${mi}">
+                        <div class="module-title" onclick="toggleModule(${mi})">
+                            <span>${escapeHtml(mod.title)}</span>
+                            <span>${mod.lessons.length} lessons</span>
+                        </div>
+                        <ul class="lessons">`;
+            for (let les of mod.lessons) {
+                const completedClass = les.is_completed ? 'completed' : '';
+                const activeClass = (currentLesson && currentLesson.id === les.id) ? 'active' : '';
+                let icon = '📄';
+                if (les.lesson_type === 'video') icon = '🎬';
+                else if (les.lesson_type === 'quiz') icon = '📝';
+                html += `<li class="lesson-item ${completedClass} ${activeClass}" data-lesson-id="${les.id}" onclick="loadLessonById(${les.id})">
+                            <span class="lesson-title">${icon} ${escapeHtml(les.title)}</span>
+                            <span class="lesson-duration">${les.duration_minutes ? les.duration_minutes + ' min' : ''}</span>
+                            ${les.is_completed ? '<span class="complete-badge">✓</span>' : ''}
+                         </li>`;
+            }
+            html += `</ul></div>`;
+        }
+        document.getElementById('curriculum').innerHTML = html;
+        updateNavButtons();
+    }
+
+    function toggleModule(index) {
+        const moduleDiv = document.querySelector(`.module[data-module-index="${index}"]`);
+        if (moduleDiv) moduleDiv.classList.toggle('open');
+    }
+
+    // Load lesson by its ID
+    async function loadLessonById(lessonId) {
+        const lesson = allLessons.find(l => l.id == lessonId);
+        if (!lesson) return;
+        const idx = allLessons.findIndex(l => l.id == lessonId);
+        if (idx !== -1) loadLessonByIndex(idx);
+    }
+
+    // Load lesson by index in allLessons array
+    async function loadLessonByIndex(index) {
+        if (index < 0 || index >= allLessons.length) return;
+        currentIndex = index;
+        currentLesson = allLessons[index];
+        // Update active state in sidebar
+        document.querySelectorAll('.lesson-item').forEach(el => el.classList.remove('active'));
+        const activeItem = document.querySelector(`.lesson-item[data-lesson-id="${currentLesson.id}"]`);
+        if (activeItem) activeItem.classList.add('active');
+
+        // Update UI based on lesson type
+        const videoContainer = document.getElementById('videoContainer');
+        const textContainer = document.getElementById('textContainer');
+        const markBtn = document.getElementById('markCompleteBtn');
+        const prevBtn = document.getElementById('prevBtn');
+        const nextBtn = document.getElementById('nextBtn');
+
+        // Hide both containers initially
+        videoContainer.style.display = 'none';
+        textContainer.style.display = 'none';
+        markBtn.style.display = 'none';
+
+        if (currentLesson.type === 'video') {
+            videoContainer.style.display = 'block';
             const video = document.getElementById('videoPlayer');
             const source = document.getElementById('videoSource');
-            source.src = url;
+            source.src = `/ethioskillfactoryV2/api/learning/stream.php?lesson_id=${currentLesson.id}`;
             video.load();
-            video.play();
-            document.getElementById('lessonInfo').innerHTML = `<strong>${title}</strong>`;
+            video.play().catch(e => console.log('autoplay blocked'));
+            markBtn.style.display = 'block';
+        } 
+        else if (currentLesson.type === 'text') {
+            textContainer.style.display = 'block';
+            let content = currentLesson.content;
+            // If content is a URL, fetch it; else display as text
+            if (content.startsWith('http')) {
+                const resp = await fetch(content);
+                content = await resp.text();
+            }
+            textContainer.innerHTML = `<h3>${escapeHtml(currentLesson.title)}</h3><div class="content">${escapeHtml(content)}</div>`;
+            markBtn.style.display = 'block';
+        }
+        else if (currentLesson.type === 'quiz') {
+            // Redirect to quiz page
+            window.location.href = `/ethioskillfactoryV2/public/learning/quiz.html?lesson_id=${currentLesson.id}`;
+            return;
         }
 
-        loadCurriculum();
-    </script>
+        // Update complete button state
+        if (currentLesson.is_completed) {
+            markBtn.textContent = 'Completed ✓';
+            markBtn.classList.add('completed');
+            markBtn.disabled = true;
+        } else {
+            markBtn.textContent = 'Mark Complete';
+            markBtn.classList.remove('completed');
+            markBtn.disabled = false;
+        }
+
+        // Show/hide navigation buttons
+        updateNavButtons();
+    }
+
+    function updateNavButtons() {
+        const prevBtn = document.getElementById('prevBtn');
+        const nextBtn = document.getElementById('nextBtn');
+        if (currentIndex > 0) prevBtn.style.display = 'inline-block';
+        else prevBtn.style.display = 'none';
+        if (currentIndex < allLessons.length - 1) nextBtn.style.display = 'inline-block';
+        else nextBtn.style.display = 'none';
+    }
+
+    // Mark current lesson complete
+    async function markComplete() {
+        if (!currentLesson || currentLesson.is_completed) return;
+        const res = await fetch('/ethioskillfactoryV2/api/learning/complete-lesson.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ lesson_id: currentLesson.id })
+        });
+        const data = await res.json();
+        if (data.success) {
+            currentLesson.is_completed = true;
+            // Update sidebar
+            const lessonItem = document.querySelector(`.lesson-item[data-lesson-id="${currentLesson.id}"]`);
+            if (lessonItem) {
+                lessonItem.classList.add('completed');
+                let badge = lessonItem.querySelector('.complete-badge');
+                if (!badge) {
+                    badge = document.createElement('span');
+                    badge.className = 'complete-badge';
+                    badge.textContent = '✓';
+                    lessonItem.appendChild(badge);
+                }
+            }
+            // Update button
+            const markBtn = document.getElementById('markCompleteBtn');
+            markBtn.textContent = 'Completed ✓';
+            markBtn.classList.add('completed');
+            markBtn.disabled = true;
+
+            // Auto move to next lesson if there is one
+            if (currentIndex < allLessons.length - 1) {
+                setTimeout(() => {
+                    loadLessonByIndex(currentIndex + 1);
+                }, 1000);
+            }
+        } else {
+            alert(data.message || 'Failed to mark complete');
+        }
+    }
+
+    // Navigation
+    function nextLesson() {
+        if (currentIndex < allLessons.length - 1) {
+            loadLessonByIndex(currentIndex + 1);
+        }
+    }
+    function prevLesson() {
+        if (currentIndex > 0) {
+            loadLessonByIndex(currentIndex - 1);
+        }
+    }
+
+    // Event listeners after DOM ready
+    document.addEventListener('DOMContentLoaded', () => {
+        document.getElementById('prevBtn').addEventListener('click', prevLesson);
+        document.getElementById('nextBtn').addEventListener('click', nextLesson);
+        document.getElementById('markCompleteBtn').addEventListener('click', markComplete);
+        if (courseId) loadCurriculum();
+        else document.getElementById('curriculum').innerHTML = '<div class="error-msg">No course ID provided</div>';
+    });
+</script>
 </body>
 </html>

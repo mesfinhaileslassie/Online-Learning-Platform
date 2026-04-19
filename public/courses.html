@@ -2,53 +2,412 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>All Courses - EthioSkillFactory</title>
-    <link rel="stylesheet" href="css/style.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>Course Player - EthioSkillFactory</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #0f0f1a;
+            color: #333;
+        }
+
+        /* Header */
+        .learning-header {
+            background: #1e1e2f;
+            color: white;
+            padding: 12px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #2d2d3f;
+        }
+        .learning-header h2 {
+            font-size: 1.2rem;
+            font-weight: 500;
+        }
+        .back-btn {
+            color: white;
+            text-decoration: none;
+            background: #2d2d3f;
+            padding: 6px 14px;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            transition: background 0.2s;
+        }
+        .back-btn:hover {
+            background: #3d3d5a;
+        }
+
+        /* Main layout */
+        .learning-main {
+            display: flex;
+            flex-direction: row;
+            height: calc(100vh - 56px);
+        }
+
+        /* Video area (left) */
+        .video-area {
+            flex: 2;
+            background: #000;
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+        }
+        .video-wrapper {
+            background: black;
+            position: relative;
+            padding-bottom: 56.25%; /* 16:9 */
+            height: 0;
+        }
+        video {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: black;
+        }
+        .lesson-info {
+            background: white;
+            padding: 20px;
+            border-top: 1px solid #e0e0e0;
+        }
+        .lesson-info h3 {
+            font-size: 1.3rem;
+            margin-bottom: 8px;
+        }
+        .lesson-info p {
+            color: #555;
+        }
+
+        /* Sidebar (right) */
+        .sidebar {
+            width: 360px;
+            background: #fefefe;
+            border-left: 1px solid #ddd;
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+        }
+        .sidebar-header {
+            padding: 15px 20px;
+            background: #f5f5fa;
+            border-bottom: 1px solid #ddd;
+            font-weight: 600;
+            font-size: 1rem;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+        .curriculum {
+            flex: 1;
+            overflow-y: auto;
+            padding: 10px 0 20px;
+        }
+
+        /* Modules & lessons */
+        .module {
+            margin-bottom: 8px;
+            border-bottom: 1px solid #eaeef2;
+        }
+        .module-title {
+            padding: 12px 20px;
+            background: #fafafc;
+            cursor: pointer;
+            font-weight: 600;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: background 0.2s;
+        }
+        .module-title:hover {
+            background: #f0f0f8;
+        }
+        .lessons {
+            list-style: none;
+            display: none;
+            background: white;
+        }
+        .module.open .lessons {
+            display: block;
+        }
+        .lesson-item {
+            padding: 10px 20px 10px 40px;
+            cursor: pointer;
+            border-left: 3px solid transparent;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: background 0.15s;
+            font-size: 0.9rem;
+        }
+        .lesson-item:hover {
+            background: #f8f9ff;
+        }
+        .lesson-item.active {
+            background: #eef2ff;
+            border-left-color: #4f46e5;
+        }
+        .lesson-title {
+            flex: 1;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .lesson-duration {
+            font-size: 0.7rem;
+            color: #6c757d;
+            margin-left: 12px;
+            white-space: nowrap;
+        }
+        .complete-badge {
+            font-size: 0.7rem;
+            color: #10b981;
+            margin-left: 8px;
+        }
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #6c757d;
+        }
+        .error-msg {
+            color: #dc2626;
+            background: #fee2e2;
+            padding: 15px;
+            margin: 15px;
+            border-radius: 8px;
+            text-align: center;
+        }
+    </style>
 </head>
 <body>
-    <div class="container">
-        <h1>Our Courses</h1>
-        <div id="courses-list" class="courses-grid"></div>
+<div class="learning-header">
+    <h2>📘 EthioSkillFactory – Course Player</h2>
+    <a href="/ethioskillfactoryV2/public/dashboard/index.html" class="back-btn">← Dashboard</a>
+</div>
+
+<div class="learning-main">
+    <div class="video-area">
+        <div class="video-wrapper">
+            <video id="videoPlayer" controls preload="metadata">
+                <source id="videoSource" src="" type="video/mp4">
+                Your browser does not support video playback.
+            </video>
+        </div>
+        <div class="lesson-info" id="lessonInfo">
+            <h3 id="currentLessonTitle">Select a lesson to begin</h3>
+            <p id="currentLessonDesc"></p>
+        </div>
     </div>
 
-    <script>
-        async function loadCourses() {
-            try {
-                const response = await fetch('/ethioskillfactoryV2/api/courses/list.php');
-                const data = await response.json();
-                
-                if (data.success && data.courses.length > 0) {
-                    const container = document.getElementById('courses-list');
-                    container.innerHTML = data.courses.map(course => `
-                        <div class="course-card">
-                            <h3>${escapeHtml(course.title)}</h3>
-                            <p>${escapeHtml(course.description.substring(0, 100))}...</p>
-                            <div class="course-meta">
-                                <span>👨‍🏫 ${escapeHtml(course.instructor_name)}</span>
-                                <span>📊 ${course.level}</span>
-                            </div>
-                            <div class="price">${course.price_formatted}</div>
-                            <a href="course-details.html?id=${course.id}" class="btn btn-primary">View Details</a>
-                        </div>
-                    `).join('');
-                } else {
-                    document.getElementById('courses-list').innerHTML = '<p>No courses available yet.</p>';
-                }
-            } catch (error) {
-                console.error('Error loading courses:', error);
-                document.getElementById('courses-list').innerHTML = '<p>Error loading courses. Please try again.</p>';
+    <div class="sidebar">
+        <div class="sidebar-header">📚 Course Curriculum</div>
+        <div class="curriculum" id="curriculum">
+            <div class="loading">Loading course content...</div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Get course ID from URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const courseId = urlParams.get('id');
+    let currentLessonId = null;
+    let modulesData = [];
+
+    // Helper: escape HTML
+    function escapeHtml(text) {
+        if (!text) return '';
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    // Format duration (minutes -> mm:ss or just string)
+    function formatDuration(min) {
+        if (!min) return '0 min';
+        if (min < 60) return min + ' min';
+        const hours = Math.floor(min / 60);
+        const mins = min % 60;
+        return hours + ' hr ' + mins + ' min';
+    }
+
+    // Render curriculum sidebar
+    function renderCurriculum(modules) {
+        if (!modules || modules.length === 0) {
+            document.getElementById('curriculum').innerHTML = '<div class="loading">No modules found for this course.</div>';
+            return;
+        }
+        let html = '';
+        for (let i = 0; i < modules.length; i++) {
+            const mod = modules[i];
+            const isOpen = (i === 0) ? 'open' : ''; // open first module by default
+            html += `
+                <div class="module ${isOpen}" data-module-index="${i}">
+                    <div class="module-title" onclick="toggleModule(${i})">
+                        <span>${escapeHtml(mod.title)}</span>
+                        <span>${mod.lessons.length} lesson${mod.lessons.length !== 1 ? 's' : ''}</span>
+                    </div>
+                    <ul class="lessons">
+            `;
+            for (const lesson of mod.lessons) {
+                const activeClass = (currentLessonId === lesson.id) ? 'active' : '';
+                html += `
+                    <li class="lesson-item ${activeClass}" data-lesson-id="${lesson.id}" data-lesson-url="${escapeHtml(lesson.content_url || '')}" data-lesson-title="${escapeHtml(lesson.title)}" data-lesson-type="${lesson.lesson_type}">
+                        <span class="lesson-title">
+                            ${lesson.lesson_type === 'video' ? '🎬' : (lesson.lesson_type === 'quiz' ? '📝' : '📄')} ${escapeHtml(lesson.title)}
+                        </span>
+                        <span class="lesson-duration">${formatDuration(lesson.duration_minutes)}</span>
+                        ${lesson.is_completed ? '<span class="complete-badge">✓</span>' : ''}
+                    </li>
+                `;
             }
+            html += `</ul></div>`;
         }
-        
-        function escapeHtml(text) {
-            if (!text) return '';
-            const div = document.createElement('div');
-            div.textContent = text;
-            return div.innerHTML;
+        document.getElementById('curriculum').innerHTML = html;
+
+        // Attach click listeners to lesson items
+        document.querySelectorAll('.lesson-item').forEach(item => {
+            item.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const lessonId = parseInt(item.dataset.lessonId);
+                const lessonTitle = item.dataset.lessonTitle;
+                const lessonUrl = item.dataset.lessonUrl;
+                const lessonType = item.dataset.lessonType;
+                playLesson(lessonId, lessonTitle, lessonUrl, lessonType);
+            });
+        });
+    }
+
+    // Toggle module open/close
+    function toggleModule(index) {
+        const moduleDiv = document.querySelector(`.module[data-module-index="${index}"]`);
+        if (moduleDiv) moduleDiv.classList.toggle('open');
+    }
+
+    // Play a lesson (secure video stream for video lessons)
+    async function playLesson(lessonId, title, contentUrl, type) {
+        currentLessonId = lessonId;
+        document.getElementById('currentLessonTitle').innerText = title;
+        document.getElementById('lessonInfo').innerHTML = `<h3>${escapeHtml(title)}</h3><p>${type === 'video' ? 'Video lesson is loading securely...' : (type === 'quiz' ? 'Quiz will be available soon.' : 'Text lesson.')}</p>`;
+
+        const video = document.getElementById('videoPlayer');
+        const source = document.getElementById('videoSource');
+
+        if (type === 'quiz') {
+                window.location.href = `/ethioskillfactoryV2/public/learning/quiz.html?lesson_id=${lessonId}`;
+                return;
+            }
+
+        if (type === 'video') {
+            // Use secure streaming endpoint instead of direct URL
+            const streamUrl = `/ethioskillfactoryV2/api/learning/stream.php?lesson_id=${lessonId}`;
+            source.src = streamUrl;
+            video.load();
+            video.play().catch(e => console.warn('Autoplay blocked:', e));
+            video.style.display = 'block';
+        } else if (type === 'quiz') {
+            // For quizzes, hide video and show quiz placeholder (will implement later)
+            video.style.display = 'none';
+            document.getElementById('lessonInfo').innerHTML = `<h3>${escapeHtml(title)}</h3><p>Quiz lesson: functionality coming soon.</p><button id="startQuizBtn" class="btn-quiz">Start Quiz</button>`;
+        } else {
+            // Text lesson
+            video.style.display = 'none';
+            // Optionally load text content from API
+            document.getElementById('lessonInfo').innerHTML = `<h3>${escapeHtml(title)}</h3><div class="text-lesson-content">${escapeHtml(contentUrl) || 'No content available.'}</div>`;
         }
-        
-        loadCourses();
-    </script>
+
+        // Highlight active lesson in sidebar
+        document.querySelectorAll('.lesson-item').forEach(el => el.classList.remove('active'));
+        const activeItem = document.querySelector(`.lesson-item[data-lesson-id="${lessonId}"]`);
+        if (activeItem) activeItem.classList.add('active');
+    }
+
+    // Load curriculum from API
+    async function loadCurriculum() {
+        const container = document.getElementById('curriculum');
+        container.innerHTML = '<div class="loading">Loading curriculum...</div>';
+
+        try {
+            const response = await fetch(`/ethioskillfactoryV2/api/learning/curriculum.php?course_id=${courseId}`);
+            const data = await response.json();
+
+            if (data.success && data.modules) {
+                modulesData = data.modules;
+                renderCurriculum(modulesData);
+
+                // Auto-select first lesson if exists
+                if (modulesData.length > 0 && modulesData[0].lessons.length > 0) {
+                    const firstLesson = modulesData[0].lessons[0];
+                    playLesson(firstLesson.id, firstLesson.title, firstLesson.content_url, firstLesson.lesson_type);
+                } else {
+                    document.getElementById('lessonInfo').innerHTML = '<h3>No lessons available</h3><p>This course has no content yet.</p>';
+                }
+            } else {
+                container.innerHTML = `<div class="error-msg">⚠️ ${data.message || 'Unable to load course content. Make sure you are enrolled.'}</div>`;
+            }
+        } catch (error) {
+            console.error('Curriculum load error:', error);
+            container.innerHTML = '<div class="error-msg">⚠️ Network error. Please refresh the page.</div>';
+        }
+    }
+
+    // Check if courseId is present
+    if (!courseId) {
+        document.getElementById('curriculum').innerHTML = '<div class="error-msg">❌ No course selected. Please go back to dashboard.</div>';
+        document.getElementById('lessonInfo').innerHTML = '<h3>Error</h3><p>Missing course ID.</p>';
+    } else {
+        loadCurriculum();
+    }
+</script>
+
+<!-- Small CSS for quiz button (if needed) -->
+<style>
+    .btn-quiz {
+        background: #4f46e5;
+        color: white;
+        border: none;
+        padding: 8px 20px;
+        border-radius: 6px;
+        margin-top: 15px;
+        cursor: pointer;
+    }
+    .text-lesson-content {
+        background: #f8f9fa;
+        padding: 15px;
+        border-radius: 8px;
+        margin-top: 10px;
+        white-space: pre-wrap;
+    }
+    .lesson-item .lesson-title {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+    video {
+        outline: none;
+    }
+    /* Responsive */
+    @media (max-width: 768px) {
+        .learning-main {
+            flex-direction: column;
+        }
+        .sidebar {
+            width: 100%;
+            height: 40vh;
+            border-left: none;
+            border-top: 1px solid #ddd;
+        }
+        .video-area {
+            height: 60vh;
+        }
+    }
+</style>
 </body>
 </html>

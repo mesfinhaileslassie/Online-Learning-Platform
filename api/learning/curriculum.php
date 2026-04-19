@@ -10,15 +10,19 @@ if (!$course_id) {
     exit();
 }
 
-// Check enrollment
 $user_id = $_SESSION['user_id'] ?? 0;
-$check = mysqli_query($conn, "SELECT id FROM enrollments WHERE user_id = $user_id AND course_id = $course_id AND payment_status = 'completed'");
-if (!mysqli_num_rows($check)) {
-    echo json_encode(['success' => false, 'message' => 'Not enrolled']);
+if (!$user_id) {
+    echo json_encode(['success' => false, 'message' => 'Not logged in']);
     exit();
 }
 
-// Get modules and lessons
+// Check enrollment
+$check = mysqli_query($conn, "SELECT id FROM enrollments WHERE user_id = $user_id AND course_id = $course_id AND payment_status = 'completed'");
+if (!mysqli_num_rows($check)) {
+    echo json_encode(['success' => false, 'message' => 'You are not enrolled in this course']);
+    exit();
+}
+
 $modules = [];
 $modResult = mysqli_query($conn, "SELECT * FROM modules WHERE course_id = $course_id ORDER BY order_index");
 while ($module = mysqli_fetch_assoc($modResult)) {
